@@ -355,6 +355,7 @@ class Resource(object):
         if isinstance(e, (PistonException, PistonBadRequestException, PistonForbiddenException, PistonMethodException, PistonNotFoundException, PistonUnauthorizedException)):
             response.status_code = e.status_code
             response.error_message = e.message
+            response.error_code = e.error_code
             response.headers.update(e.headers)
         elif isinstance(e, FormValidationError):
             response.status_code = 400
