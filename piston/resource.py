@@ -65,6 +65,30 @@ class PistonMethodException(PistonException):
         message = message or self.message
         super(PistonMethodException, self).__init__(self.status_code, message, headers)
 
+class PistonConflictException(PistonException):
+    """HTTP409 exception.
+
+    The default error message is useless, this should probably always be
+    instanciated with a real message and an error code:
+
+    >>> e = PistonConflictException("Username already taken")
+    >>> e.error_code = 490
+    """
+    status_code = 409
+    message = 'Your request conflicts with state of this resource'
+    def __init__(self, message=None, headers=None):
+        message = message or self.message
+        super(PistonConflictException, self).__init__(self.status_code, message, headers)
+
+class PistonGoneException(PistonException):
+    """Different to HTTP404: the resource used to exist but we lost it
+    """
+    status_code = 410
+    message = 'The resource does not exist anymore'
+    def __init__(self, message=None, headers=None):
+        message = message or self.message
+        super(PistonGoneException, self).__init__(self.status_code, message, headers)
+
 class Response(object):
     def __init__(self):
         self.status_code = 200
