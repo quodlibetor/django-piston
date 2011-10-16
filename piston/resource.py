@@ -376,7 +376,7 @@ class Resource(object):
         needs
         """
         response.status_code = 500
-        if isinstance(e, (PistonException, PistonBadRequestException, PistonForbiddenException, PistonMethodException, PistonNotFoundException, PistonUnauthorizedException)):
+        if isinstance(e, (PistonException, PistonBadRequestException, PistonForbiddenException, PistonMethodException, PistonNotFoundException, PistonUnauthorizedException, PistonConflictException, PistonGoneException)):
             response.status_code = e.status_code
             response.error_message = e.message
             response.error_code = e.error_code
