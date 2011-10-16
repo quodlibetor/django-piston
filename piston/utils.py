@@ -79,7 +79,9 @@ rc = rc_factory()
 
 class FormValidationError(Exception):
     def __init__(self, form):
-        self.form = form
+        self.form        = form
+        self.error_code  = None
+        self.status_code = None
 
 class HttpStatusCode(Exception):
     def __init__(self, response):

@@ -19,9 +19,10 @@ from utils import rc, format_error, translate_mime, MimerDataException
 CHALLENGE = object()
 
 class PistonException(Exception):
-    def __init__(self, status_code, message, headers=None):
+    def __init__(self, status_code, message, headers=None, error_code=None):
         self.status_code = status_code
         self.message = message
+        self.error_code = error_code and error_code or status_code
         self.headers = headers and headers or {}
 
     def __unicode__(self):
@@ -31,9 +32,9 @@ class PistonBadRequestException(PistonException):
     status_code = 400
     message = 'Malformed or syntactically incorrect request'
 
-    def __init__(self, message=None, headers=None):
+    def __init__(self, message=None, headers=None, error_code=None):
         message = message or self.message
-        super(PistonBadRequestException, self).__init__(self.status_code, message, headers)
+        super(PistonBadRequestException, self).__init__(self.status_code, message, headers, error_code)
 
 class PistonUnauthorizedException(PistonException):
     status_code = 401
@@ -106,9 +107,40 @@ class Response(object):
 
 class EnhancedResponse(Response):
     def transform_data(self):
+        """Move the data into an envelope
+
+        If the data has "status_code" or "error_code" attributes and those
+        names are not in "fields" they will be moved up to the envelope.
+
+        So if your view looks like this at the end:
+
+        >>> response.status_code = 500
+        >>> return response
+
+        The final view will have {"status_code": 500,
+                                  "data": {//no status_code
+                                          }
+
+        I should probably move those into a "Meta" class, to be
+        Django-consistent.
+        """
+
+        status_code = self.status_code
+        try:
+            if not 'status_code' in self.data.fields:
+                status_code = self.data.status_code
+        except AttributeError:
+            pass
+
+        error_code = self.error_code
+        try:
+            if not 'error_code' in self.data.fields:
+                error_code = self.data.error_code
+        except AttributeError:
+            pass
         return {
-                'status_code': self.status_code,
-                'error_code': self.error_code,
+                'status_code': status_code,
+                'error_code': error_code,
                 'error_message': self.error_message,
                 'form_errors': self.form_errors,
                 'data': self.data,
@@ -382,7 +414,10 @@ class Resource(object):
             response.error_code = e.error_code
             response.headers.update(e.headers)
         elif isinstance(e, FormValidationError):
-            response.status_code = 400
+            response.status_code = e.status_code or 400
+            if hasattr(e, 'error_code'):
+                response.error_code = e.error_code
+            response.error_message = e.message
             response.form_errors = e.form.errors
         elif isinstance(e, TypeError) and meth:
             hm = HandlerMethod(meth)
